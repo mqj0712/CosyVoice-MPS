@@ -61,3 +61,8 @@ pretrained_models/*
 /*_dubbed.*
 /*_audio*.wav
 /img0172_en.txt
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+output/

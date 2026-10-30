@@ -40,8 +40,8 @@ class CosyVoiceFrontEnd:
         self.feat_extractor = feat_extractor
         if torch.cuda.is_available():
             self.device = torch.device('cuda')
-        elif torch.backends.mps.is_available():
-            self.device = torch.device('mps')
+#        elif torch.backends.mps.is_available():
+#            self.device = torch.device('mps')
         else:
             self.device = torch.device('cpu')
         option = onnxruntime.SessionOptions()
@@ -71,8 +71,21 @@ class CosyVoiceFrontEnd:
             try:
                 from wetext import Normalizer as ZhNormalizer
                 from wetext import Normalizer as EnNormalizer
-                self.zh_tn_model = ZhNormalizer(remove_erhua=False)
-                self.en_tn_model = EnNormalizer()
+                ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                WETEXT_DIR = os.path.join(ROOT_DIR, "pretrained_models", "wetext")
+                zh_tagger = os.path.join(WETEXT_DIR, "zh", "tn", "tagger.fst")
+                zh_verbalizer = os.path.join(WETEXT_DIR, "zh", "tn", "verbalizer.fst")
+                en_tagger = os.path.join(WETEXT_DIR, "en", "tn", "tagger.fst")
+                en_verbalizer = os.path.join(WETEXT_DIR, "en", "tn", "verbalizer.fst")
+                required_files = [zh_tagger, zh_verbalizer, en_tagger, en_verbalizer,]
+                missing_files = [path for path in required_files if not os.path.isfile(path)]
+                if missing_files: 
+                    raise FileNotFoundError( "Missing WeTextProcessing resource files:\n" + "\n".join(missing_files))
+                self.zh_tn_model = ZhNormalizer(tagger_path=zh_tagger, verbalizer_path=zh_verbalizer, lang="zh", remove_erhua=False)
+                self.en_tn_model = EnNormalizer(tagger_path=en_tagger, verbalizer_path=en_verbalizer, lang="en")
+
+                #self.zh_tn_model = ZhNormalizer(remove_erhua=False)
+                #self.en_tn_model = EnNormalizer()
                 self.text_frontend = 'wetext'
                 logging.info('use wetext frontend')
             except:
