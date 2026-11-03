@@ -49,6 +49,7 @@ def main():
         f'You are a helpful assistant.<|endofprompt|>{args.ref_text}',
         args.ref_audio,
         stream=False,
+        speed=0.85
     )):
         chunks.append(result['tts_speech'])
         print(f'  chunk {i + 1} done ({result["tts_speech"].shape[1] / model.sample_rate:.1f}s)')

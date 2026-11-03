@@ -500,9 +500,27 @@ class HiFTGenerator(nn.Module):
         magnitude = torch.clip(magnitude, max=1e2)
         real = magnitude * torch.cos(phase)
         img = magnitude * torch.sin(phase)
-        inverse_transform = torch.istft(torch.complex(real, img), self.istft_params["n_fft"], self.istft_params["hop_len"],
-                                        self.istft_params["n_fft"], window=self.stft_window.to(magnitude.device))
-        return inverse_transform
+        # inverse_transform = torch.istft(torch.complex(real, img), self.istft_params["n_fft"], self.istft_params["hop_len"],
+        #                                 self.istft_params["n_fft"], window=self.stft_window.to(magnitude.device))
+        # return inverse_transform
+        '''修改开始'''
+        spec = torch.complex(real, img)
+        # 仅将 ISTFT 放到 CPU，绕过 MPS 的算子兼容性问题
+        original_device = magnitude.device
+        inverse_transform = torch.istft(
+            spec.to("cpu"),
+            self.istft_params["n_fft"],
+            self.istft_params["hop_len"],
+            self.istft_params["n_fft"],
+            window=self.stft_window.to(
+                device="cpu",
+                dtype=magnitude.dtype
+            )
+        )
+        # 将输出放回输入设备，保持调用方的设备预期
+        return inverse_transform.to(original_device)
+        '''修改结束'''
+
 
     def decode(self, x: torch.Tensor, s: torch.Tensor = torch.zeros(1, 1, 0)) -> torch.Tensor:
         s_stft_real, s_stft_imag = self._stft(s.squeeze(1))
